@@ -4,6 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Garden Cricket Score</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1e8f4a">
   <style>
     :root{
       --bg:#f7fdf2;
@@ -17,7 +19,7 @@
     body{background:linear-gradient(180deg, #e9fff0 0%, var(--bg) 100%);display:flex;align-items:center;justify-content:center;padding:18px;}
     .app{
       width:100%;
-      max-width:760px;
+      max-width:920px;
       background:var(--card);
       border-radius:14px;
       box-shadow:0 6px 22px rgba(18,52,24,0.08);
@@ -25,8 +27,9 @@
       box-sizing:border-box;
     }
     header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-    header h1{font-size:20px;margin:0;color:var(--accent);}
+    header h1{font-size:20px;margin:0;color:var(--accent);}    
     .meta{font-size:13px;color:var(--muted);}
+    .layout{display:grid;grid-template-columns:1fr 260px;gap:12px}
     .scoreboard{
       display:flex;
       gap:12px;
@@ -82,10 +85,21 @@
     .history .row{display:flex;justify-content:space-between;padding:6px 4px;border-bottom:1px dashed rgba(0,0,0,0.04);}    
     .history .row:last-child{border-bottom:0}
     .history .time{color:var(--muted);font-size:12px}
+
+    /* Players panel */
+    .players{
+      background:#fffefc;border-radius:10px;padding:12px;border:1px solid rgba(0,0,0,0.04);
+    }
+    .players h3{margin:0 0 8px 0;font-size:16px}
+    .player-list{display:flex;flex-direction:column;gap:6px;max-height:320px;overflow:auto}
+    .player{display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:8px}
+    .player button{margin-left:8px}
+    .player.active{background:linear-gradient(90deg,#eaffef, #f7fff5);font-weight:700;border:1px solid rgba(30,143,74,0.06)}
+    .player .name{flex:1}
+
     footer{font-size:13px;color:var(--muted);margin-top:10px;text-align:center}
-    @media (max-width:560px){
-      .controls{grid-template-columns: repeat(3, 1fr)}
-      .small{flex-basis:120px;width:120px}
+    @media (max-width:760px){
+      .layout{grid-template-columns:1fr}
       .big .value{font-size:44px}
     }
   </style>
@@ -94,45 +108,61 @@
   <div class="app" role="application" aria-label="Garden Cricket Score">
     <header>
       <h1>Garden Cricket Score</h1>
-      <div class="meta">Simple — no overs, just runs & wickets</div>
+      <div class="meta">Simple — players, runs & wickets; Out moves to the next player</div>
     </header>
 
-    <section class="scoreboard" aria-live="polite">
-      <div class="big" id="runsCard">
-        <div class="label">Runs</div>
-        <div class="value" id="runsValue">0</div>
-      </div>
-      <div class="small" id="wicketsCard">
-        <div class="label">Wickets</div>
-        <div class="value" id="wicketsValue">0</div>
-      </div>
-      <div class="small" style="align-self:center;">
-        <div class="label">Last</div>
-        <div class="value" id="lastValue">—</div>
-      </div>
-    </section>
+    <div class="layout">
+      <main>
+        <section class="scoreboard" aria-live="polite">
+          <div class="big" id="teamCard">
+            <div class="label">Team Runs</div>
+            <div class="value" id="runsValue">0</div>
+          </div>
+          <div class="small" id="teamWickets">
+            <div class="label">Team Wickets</div>
+            <div class="value" id="wicketsValue">0</div>
+          </div>
+          <div class="small" style="align-self:center;">
+            <div class="label">Last</div>
+            <div class="value" id="lastValue">—</div>
+          </div>
+        </section>
 
-    <section>
-      <div class="controls" role="group" aria-label="Run buttons">
-        <button class="zero" data-run="0">0</button>
-        <button data-run="1">1</button>
-        <button data-run="2">2</button>
-        <button data-run="3">3</button>
-        <button data-run="4">4</button>
-        <button data-run="5">5</button>
-        <button data-run="6">6</button>
-        <button class="wicket" id="wicketBtn" aria-label="Wicket">WICKET</button>
-      </div>
+        <section>
+          <div class="controls" role="group" aria-label="Run buttons">
+            <button class="zero" data-run="0">0</button>
+            <button data-run="1">1</button>
+            <button data-run="2">2</button>
+            <button data-run="3">3</button>
+            <button data-run="4">4</button>
+            <button data-run="5">5</button>
+            <button data-run="6">6</button>
+            <button class="wicket" id="wicketBtn" aria-label="Wicket">OUT</button>
+          </div>
 
-      <div class="actions">
-        <button id="undoBtn" class="btn-undo">Undo</button>
-        <button id="resetBtn" class="btn-reset">Reset</button>
-        <button id="customBtn" style="background:#ffd166">+ Custom</button>
-        <button id="clearHistory" style="background:#dbeafe;color:#023047">Clear History</button>
-      </div>
+          <div class="actions">
+            <button id="undoBtn" class="btn-undo">Undo</button>
+            <button id="resetBtn" class="btn-reset">Reset</button>
+            <button id="customBtn" style="background:#ffd166">+ Custom</button>
+            <button id="clearHistory" style="background:#dbeafe;color:#023047">Clear History</button>
+          </div>
 
-      <div class="history" id="history" aria-label="Action history"></div>
-    </section>
+          <div class="history" id="history" aria-label="Action history"></div>
+        </section>
+      </main>
+
+      <aside class="players" aria-label="Players">
+        <h3>Players</h3>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <button id="addPlayer" style="flex:1;background:#dff9ea;border:0;padding:8px;border-radius:8px">+ Add Player</button>
+          <button id="resetPlayers" style="flex:1;background:#fff5f5;color:var(--danger);border:1px solid rgba(217,83,79,0.12);padding:8px;border-radius:8px">Reset Players</button>
+        </div>
+        <div class="player-list" id="playerList"></div>
+        <div style="margin-top:10px;color:var(--muted);font-size:13px">
+          Active: <span id="activeName">—</span> — <span id="activeScore">0 runs, 0 wkts</span>
+        </div>
+      </aside>
+    </div>
 
     <footer>
       Tip: Add this page to your phone's Home Screen for one-tap access.
@@ -141,21 +171,27 @@
 
   <script>
     (function(){
-      const LS_KEY = 'garden-cricket-score-v1';
-      let state = { runs:0, wickets:0, history: [] };
+      const LS_KEY = 'garden-cricket-score-v2';
+      // state: team totals + players array + history
+      let state = { runs:0, wickets:0, history: [], players: [{name:'Player 1', runs:0, wickets:0}], currentPlayer:0 };
 
       // DOM
       const runsValue = document.getElementById('runsValue');
       const wicketsValue = document.getElementById('wicketsValue');
       const lastValue = document.getElementById('lastValue');
       const historyEl = document.getElementById('history');
+      const playerList = document.getElementById('playerList');
+      const activeName = document.getElementById('activeName');
+      const activeScore = document.getElementById('activeScore');
 
-      // load
       function load(){
         try{
           const raw = localStorage.getItem(LS_KEY);
           if(raw) state = JSON.parse(raw);
         }catch(e){ /* ignore */ }
+        // sanity: ensure players exist
+        if(!state.players || state.players.length===0) state.players = [{name:'Player 1', runs:0, wickets:0}];
+        if(typeof state.currentPlayer !== 'number') state.currentPlayer = 0;
         render();
       }
 
@@ -172,7 +208,8 @@
         runsValue.textContent = state.runs;
         wicketsValue.textContent = state.wickets;
         const last = state.history[state.history.length-1];
-        lastValue.textContent = last ? (last.type === 'run' ? `+${last.value}` : 'W') : '—';
+        lastValue.textContent = last ? (last.type === 'run' ? `+${last.value} (${last.playerName})` : `W (${last.playerName})`) : '—';
+
         // history list (most recent first)
         historyEl.innerHTML = '';
         for(let i=state.history.length-1;i>=0;i--){
@@ -182,7 +219,7 @@
           const left = document.createElement('div');
           left.style.fontWeight='600';
           left.style.color = item.type==='run' ? '#0b3' : '#d33';
-          left.textContent = item.type==='run' ? `${item.value} run${Math.abs(item.value)!==1?'s':''}` : 'WICKET';
+          left.textContent = item.type==='run' ? `${item.value} run${Math.abs(item.value)!==1?'s':''} — ${item.playerName}` : `WICKET — ${item.playerName}`;
           const right = document.createElement('div');
           right.className='time';
           right.textContent = timeStr(item.ts);
@@ -190,43 +227,115 @@
           row.appendChild(right);
           historyEl.appendChild(row);
         }
+
+        // players
+        playerList.innerHTML = '';
+        state.players.forEach((p, idx)=>{
+          const el = document.createElement('div');
+          el.className = 'player' + (idx===state.currentPlayer ? ' active' : '');
+          const left = document.createElement('div');
+          left.style.display='flex'; left.style.alignItems='center';
+          const name = document.createElement('div');
+          name.className='name';
+          name.textContent = p.name;
+          left.appendChild(name);
+          const stats = document.createElement('div');
+          stats.style.fontSize='12px'; stats.style.color='var(--muted)';
+          stats.textContent = `${p.runs} / ${p.wickets}`;
+          left.appendChild(stats);
+
+          const right = document.createElement('div');
+          const btnSet = document.createElement('button'); btnSet.textContent='Set'; btnSet.addEventListener('click', ()=>{ setCurrent(idx); });
+          const btnRename = document.createElement('button'); btnRename.textContent='Rename'; btnRename.addEventListener('click', ()=>{ renamePlayer(idx); });
+          const btnRemove = document.createElement('button'); btnRemove.textContent='Remove'; btnRemove.addEventListener('click', ()=>{ removePlayer(idx); });
+          right.appendChild(btnSet); right.appendChild(btnRename); right.appendChild(btnRemove);
+
+          el.appendChild(left); el.appendChild(right);
+          playerList.appendChild(el);
+        });
+
+        const active = state.players[state.currentPlayer] || {name:'—', runs:0, wickets:0};
+        activeName.textContent = active.name;
+        activeScore.textContent = `${active.runs} runs, ${active.wickets} wkts`;
       }
 
       function pushAction(action){
-        // ensure history doesn't grow unbounded: keep last 200
         state.history.push(action);
-        if(state.history.length>200) state.history.shift();
+        if(state.history.length>500) state.history.shift();
         save();
         render();
       }
 
       function addRun(n){
         state.runs += n;
-        pushAction({ type:'run', value:n, ts:Date.now() });
+        const p = state.players[state.currentPlayer];
+        p.runs += n;
+        pushAction({ type:'run', value:n, ts:Date.now(), playerIndex:state.currentPlayer, playerName:p.name });
       }
       function addWicket(){
         state.wickets += 1;
-        pushAction({ type:'wicket', ts:Date.now() });
+        const p = state.players[state.currentPlayer];
+        p.wickets += 1;
+        pushAction({ type:'wicket', ts:Date.now(), playerIndex:state.currentPlayer, playerName:p.name });
+        // move to next player
+        if(state.players.length>1){
+          state.currentPlayer = (state.currentPlayer + 1) % state.players.length;
+        }
+        save();
+        render();
       }
       function undo(){
         if(state.history.length===0) return;
         const last = state.history.pop();
-        if(last.type==='run') state.runs -= last.value;
-        else if(last.type==='wicket') state.wickets = Math.max(0, state.wickets-1);
+        if(last.type==='run'){
+          state.runs -= last.value;
+          const p = state.players[last.playerIndex] || state.players[0];
+          p.runs -= last.value;
+        } else if(last.type==='wicket'){
+          state.wickets = Math.max(0, state.wickets-1);
+          const p = state.players[last.playerIndex] || state.players[0];
+          p.wickets = Math.max(0, p.wickets-1);
+          // don't try to revert player index automatically
+        }
         save();
         render();
       }
       function resetAll(){
-        if(!confirm('Reset score and history?')) return;
-        state = { runs:0, wickets:0, history:[] };
-        save();
-        render();
+        if(!confirm('Reset all scores, players and history?')) return;
+        state = { runs:0, wickets:0, history:[], players:[{name:'Player 1', runs:0, wickets:0}], currentPlayer:0 };
+        save(); render();
       }
       function clearHistory(){
-        if(!confirm('Clear history but keep current score?')) return;
+        if(!confirm('Clear history but keep current score and players?')) return;
         state.history = [];
-        save();
-        render();
+        save(); render();
+      }
+
+      // Players management
+      function addPlayer(){
+        const name = prompt('Player name:', `Player ${state.players.length+1}`);
+        if(name===null) return;
+        state.players.push({ name: name.trim() || `Player ${state.players.length+1}`, runs:0, wickets:0 });
+        save(); render();
+      }
+      function renamePlayer(idx){
+        const current = state.players[idx];
+        const name = prompt('Rename player:', current.name);
+        if(name===null) return;
+        current.name = name.trim() || current.name;
+        save(); render();
+      }
+      function removePlayer(idx){
+        if(state.players.length===1){ alert('At least one player is required.'); return; }
+        if(!confirm(`Remove ${state.players[idx].name}?`)) return;
+        state.players.splice(idx,1);
+        if(state.currentPlayer >= state.players.length) state.currentPlayer = 0;
+        save(); render();
+      }
+      function setCurrent(idx){ state.currentPlayer = idx; save(); render(); }
+      function resetPlayers(){
+        if(!confirm('Reset players to a single default player? This will clear player runs/wickets.')) return;
+        state.players = [{name:'Player 1', runs:0, wickets:0}]; state.currentPlayer = 0; save(); render();
       }
 
       // attach buttons
@@ -240,6 +349,8 @@
       document.getElementById('undoBtn').addEventListener('click', undo);
       document.getElementById('resetBtn').addEventListener('click', resetAll);
       document.getElementById('clearHistory').addEventListener('click', clearHistory);
+      document.getElementById('addPlayer').addEventListener('click', addPlayer);
+      document.getElementById('resetPlayers').addEventListener('click', resetPlayers);
 
       document.getElementById('customBtn').addEventListener('click', ()=>{
         const val = prompt('Enter runs to add (positive integer):', '1');
@@ -261,6 +372,11 @@
 
       // initialize
       load();
+
+      // PWA: register service worker
+      if('serviceWorker' in navigator){
+        navigator.serviceWorker.register('/sw.js').then(()=>console.log('Service Worker registered')).catch(()=>{});
+      }
 
       // expose for console debugging
       window.GARDEN_SCORE = {
