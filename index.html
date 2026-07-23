@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Garden Cricket Score</title>
+  <style>
+    :root{
+      --bg:#f7fdf2;
+      --card:#ffffff;
+      --accent:#1e8f4a;
+      --muted:#6b6b6b;
+      --danger:#d9534f;
+      --button:#2b9a6b;
+    }
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;}
+    body{background:linear-gradient(180deg, #e9fff0 0%, var(--bg) 100%);display:flex;align-items:center;justify-content:center;padding:18px;}
+    .app{
+      width:100%;
+      max-width:760px;
+      background:var(--card);
+      border-radius:14px;
+      box-shadow:0 6px 22px rgba(18,52,24,0.08);
+      padding:16px;
+      box-sizing:border-box;
+    }
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+    header h1{font-size:20px;margin:0;color:var(--accent);}
+    .meta{font-size:13px;color:var(--muted);}
+    .scoreboard{
+      display:flex;
+      gap:12px;
+      align-items:stretch;
+      margin-bottom:14px;
+      flex-wrap:wrap;
+    }
+    .big{
+      flex:1 1 260px;
+      background:linear-gradient(180deg,#fff 0,#f7fff5 100%);
+      border-radius:10px;
+      padding:18px;
+      text-align:center;
+    }
+    .big .label{font-size:14px;color:var(--muted)}
+    .big .value{font-size:56px;font-weight:700;color:var(--accent);margin-top:6px;}
+    .small{
+      width:150px;
+      background:linear-gradient(180deg,#fff 0,#fffaf6 100%);
+      border-radius:10px;
+      padding:12px;
+      text-align:center;
+    }
+    .small .label{font-size:13px;color:var(--muted)}
+    .small .value{font-size:36px;font-weight:700;color:#333;margin-top:6px;}
+    .controls{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:10px;
+      margin-bottom:12px;
+    }
+    .controls button{
+      background:var(--button);
+      color:white;
+      border:0;
+      padding:18px 8px;
+      font-size:22px;
+      border-radius:10px;
+      touch-action:manipulation;
+      user-select:none;
+      box-shadow:0 4px 8px rgba(0,0,0,0.06);
+    }
+    .controls button.small{padding:12px 8px;font-size:18px}
+    .controls button.wicket{background:var(--danger)}
+    .controls button.zero{background:#7a8680}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+    .actions button{flex:1 1 140px;padding:12px;border-radius:10px;border:0;font-size:16px}
+    .btn-undo{background:#f0f4f8;color:#0b3b57}
+    .btn-reset{background:#fff5f5;color:var(--danger);border:1px solid rgba(217,83,79,0.12)}
+    .history{
+      max-height:220px;overflow:auto;border-radius:8px;padding:10px;background:#fbfff9;border:1px solid rgba(30,143,74,0.06)
+    }
+    .history .row{display:flex;justify-content:space-between;padding:6px 4px;border-bottom:1px dashed rgba(0,0,0,0.04);}    
+    .history .row:last-child{border-bottom:0}
+    .history .time{color:var(--muted);font-size:12px}
+    footer{font-size:13px;color:var(--muted);margin-top:10px;text-align:center}
+    @media (max-width:560px){
+      .controls{grid-template-columns: repeat(3, 1fr)}
+      .small{flex-basis:120px;width:120px}
+      .big .value{font-size:44px}
+    }
+  </style>
+</head>
+<body>
+  <div class="app" role="application" aria-label="Garden Cricket Score">
+    <header>
+      <h1>Garden Cricket Score</h1>
+      <div class="meta">Simple — no overs, just runs & wickets</div>
+    </header>
+
+    <section class="scoreboard" aria-live="polite">
+      <div class="big" id="runsCard">
+        <div class="label">Runs</div>
+        <div class="value" id="runsValue">0</div>
+      </div>
+      <div class="small" id="wicketsCard">
+        <div class="label">Wickets</div>
+        <div class="value" id="wicketsValue">0</div>
+      </div>
+      <div class="small" style="align-self:center;">
+        <div class="label">Last</div>
+        <div class="value" id="lastValue">—</div>
+      </div>
+    </section>
+
+    <section>
+      <div class="controls" role="group" aria-label="Run buttons">
+        <button class="zero" data-run="0">0</button>
+        <button data-run="1">1</button>
+        <button data-run="2">2</button>
+        <button data-run="3">3</button>
+        <button data-run="4">4</button>
+        <button data-run="5">5</button>
+        <button data-run="6">6</button>
+        <button class="wicket" id="wicketBtn" aria-label="Wicket">WICKET</button>
+      </div>
+
+      <div class="actions">
+        <button id="undoBtn" class="btn-undo">Undo</button>
+        <button id="resetBtn" class="btn-reset">Reset</button>
+        <button id="customBtn" style="background:#ffd166">+ Custom</button>
+        <button id="clearHistory" style="background:#dbeafe;color:#023047">Clear History</button>
+      </div>
+
+      <div class="history" id="history" aria-label="Action history"></div>
+    </section>
+
+    <footer>
+      Tip: Add this page to your phone's Home Screen for one-tap access.
+    </footer>
+  </div>
+
+  <script>
+    (function(){
+      const LS_KEY = 'garden-cricket-score-v1';
+      let state = { runs:0, wickets:0, history: [] };
+
+      // DOM
+      const runsValue = document.getElementById('runsValue');
+      const wicketsValue = document.getElementById('wicketsValue');
+      const lastValue = document.getElementById('lastValue');
+      const historyEl = document.getElementById('history');
+
+      // load
+      function load(){
+        try{
+          const raw = localStorage.getItem(LS_KEY);
+          if(raw) state = JSON.parse(raw);
+        }catch(e){ /* ignore */ }
+        render();
+      }
+
+      function save(){
+        try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
+      }
+
+      function timeStr(ts){
+        const d = new Date(ts);
+        return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      }
+
+      function render(){
+        runsValue.textContent = state.runs;
+        wicketsValue.textContent = state.wickets;
+        const last = state.history[state.history.length-1];
+        lastValue.textContent = last ? (last.type === 'run' ? `+${last.value}` : 'W') : '—';
+        // history list (most recent first)
+        historyEl.innerHTML = '';
+        for(let i=state.history.length-1;i>=0;i--){
+          const item = state.history[i];
+          const row = document.createElement('div');
+          row.className = 'row';
+          const left = document.createElement('div');
+          left.style.fontWeight='600';
+          left.style.color = item.type==='run' ? '#0b3' : '#d33';
+          left.textContent = item.type==='run' ? `${item.value} run${Math.abs(item.value)!==1?'s':''}` : 'WICKET';
+          const right = document.createElement('div');
+          right.className='time';
+          right.textContent = timeStr(item.ts);
+          row.appendChild(left);
+          row.appendChild(right);
+          historyEl.appendChild(row);
+        }
+      }
+
+      function pushAction(action){
+        // ensure history doesn't grow unbounded: keep last 200
+        state.history.push(action);
+        if(state.history.length>200) state.history.shift();
+        save();
+        render();
+      }
+
+      function addRun(n){
+        state.runs += n;
+        pushAction({ type:'run', value:n, ts:Date.now() });
+      }
+      function addWicket(){
+        state.wickets += 1;
+        pushAction({ type:'wicket', ts:Date.now() });
+      }
+      function undo(){
+        if(state.history.length===0) return;
+        const last = state.history.pop();
+        if(last.type==='run') state.runs -= last.value;
+        else if(last.type==='wicket') state.wickets = Math.max(0, state.wickets-1);
+        save();
+        render();
+      }
+      function resetAll(){
+        if(!confirm('Reset score and history?')) return;
+        state = { runs:0, wickets:0, history:[] };
+        save();
+        render();
+      }
+      function clearHistory(){
+        if(!confirm('Clear history but keep current score?')) return;
+        state.history = [];
+        save();
+        render();
+      }
+
+      // attach buttons
+      document.querySelectorAll('[data-run]').forEach(btn=>{
+        btn.addEventListener('click', ()=> {
+          const n = Number(btn.getAttribute('data-run'));
+          addRun(n);
+        });
+      });
+      document.getElementById('wicketBtn').addEventListener('click', addWicket);
+      document.getElementById('undoBtn').addEventListener('click', undo);
+      document.getElementById('resetBtn').addEventListener('click', resetAll);
+      document.getElementById('clearHistory').addEventListener('click', clearHistory);
+
+      document.getElementById('customBtn').addEventListener('click', ()=>{
+        const val = prompt('Enter runs to add (positive integer):', '1');
+        if(val===null) return;
+        const n = parseInt(val,10);
+        if(Number.isNaN(n) || n<0){ alert('Please enter a positive whole number (0 allowed).'); return; }
+        addRun(n);
+      });
+
+      // keyboard shortcuts (optional):
+      window.addEventListener('keydown', (e)=>{
+        if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if(e.key === 'u') undo();
+        if(e.key === 'r') resetAll();
+        // number keys 0-6
+        if(/^[0-6]$/.test(e.key)) addRun(Number(e.key));
+        if(e.key.toLowerCase() === 'w') addWicket();
+      });
+
+      // initialize
+      load();
+
+      // expose for console debugging
+      window.GARDEN_SCORE = {
+        getState: ()=> JSON.parse(JSON.stringify(state)),
+        setState: (s)=>{ state = s; save(); render(); }
+      };
+    })();
+  </script>
+</body>
+</html>
