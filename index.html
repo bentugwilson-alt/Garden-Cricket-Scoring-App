@@ -108,18 +108,18 @@
   <div class="app" role="application" aria-label="Garden Cricket Score">
     <header>
       <h1>Garden Cricket Score</h1>
-      <div class="meta">Simple — players, runs & wickets; Out moves to the next player</div>
+      <div class="meta">Individual player scores — Out moves to the next player</div>
     </header>
 
     <div class="layout">
       <main>
         <section class="scoreboard" aria-live="polite">
           <div class="big" id="teamCard">
-            <div class="label">Team Runs</div>
+            <div class="label" id="playerNameLabel">Player Runs</div>
             <div class="value" id="runsValue">0</div>
           </div>
           <div class="small" id="teamWickets">
-            <div class="label">Team Wickets</div>
+            <div class="label">Total Wickets</div>
             <div class="value" id="wicketsValue">0</div>
           </div>
           <div class="small" style="align-self:center;">
@@ -179,6 +179,7 @@
       const runsValue = document.getElementById('runsValue');
       const wicketsValue = document.getElementById('wicketsValue');
       const lastValue = document.getElementById('lastValue');
+      const playerNameLabel = document.getElementById('playerNameLabel');
       const historyEl = document.getElementById('history');
       const playerList = document.getElementById('playerList');
       const activeName = document.getElementById('activeName');
@@ -205,7 +206,12 @@
       }
 
       function render(){
-        runsValue.textContent = state.runs;
+        // Display current player's individual score (not team total)
+        const activePlayer = state.players[state.currentPlayer];
+        runsValue.textContent = activePlayer ? activePlayer.runs : 0;
+        playerNameLabel.textContent = activePlayer ? activePlayer.name + ' Runs' : 'Player Runs';
+        
+        // Team wickets are still the total
         wicketsValue.textContent = state.wickets;
         const last = state.history[state.history.length-1];
         lastValue.textContent = last ? (last.type === 'run' ? `+${last.value} (${last.playerName})` : `W (${last.playerName})`) : '—';
